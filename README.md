@@ -10,15 +10,22 @@ Prerequisites-:
 
     MAVROS 
 
-If have any problem follow the below link-:  
+Install ardupilot_gazebo_roscam from the following the link-:  
 
 https://github.com/r0ch1n/ardupilot_gazebo_roscam 
 
- 
+
+
+Once the setup from the above link is complete add the my_code folder in the src/ardupilot_gazebo folder and rebuild the ROS package ardupilot_gazebo_roscam
+
+
+
+add the given below lines to your bash.rc if not already
+
+
+
 
 source /opt/ros/melodic/setup.bash 
-
- 
 
 export GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models:$GAZEBO_MODEL_PATH 
 
@@ -30,11 +37,7 @@ export GAZEBO_PLUGIN_PATH=/opt/ros/melodic/lib:$GAZEBO_PLUGIN_PATH
 
  
 
- 
-
-Add these lines in your bashrc file.  
-
- 
+  
 
 Open a Terminal and run these lines 
 
