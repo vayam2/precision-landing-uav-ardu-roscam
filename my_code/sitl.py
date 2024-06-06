@@ -32,14 +32,18 @@ class ArUcoDetector:
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
         # corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
         corners, ids, rejectedImgPoints = self.detector.detectMarkers(gray)
+        
+        if ids is None:
+            self.flag = 1
 
         if ids is not None:
             #rospy.loginfo("Detected ArUco markers: {}".format(ids))
             # Draw detected markers and calculate center points
-            if self.flag == 1:
+            if self.flag == 5:
                 print("stop velocity")
                 self.send_velocity(0,0,0)
                 self.flag = 0
+    
             for i in range(len(ids)):
                 marker_id = ids[i]
                 if marker_id == 4:  
@@ -59,37 +63,55 @@ class ArUcoDetector:
                     print(displacement)
                     flag_x = 0
                     flag_y = 0
-                    p_x_coeff = 0.0025
-                    p_y_coeff = 0.003
-                    if displacement_y >= 5:
-                        print("displacement > 10 thus forward")
-                        self.send_velocity(p_y_coeff*displacement_y, 0, 0)
-                        time.sleep(0.3)
-                    elif displacement_y <= -5:
-                        print("displacement < 10 thus backward")
-                        self.send_velocity(-(p_y_coeff*displacement_y), 0, 0)
-                        time.sleep(0.3)
-                    else:
-                        print("stop velocity")
-                        self.send_velocity(0,0,0)
-                        flag_x = 1 
+                    p_x_coeff = 0.0025 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
+                    p_y_coeff = 0.003 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
+                    # if displacement_y >= 2:
+                    #     print("displacement > 10 thus forward")
+                    #     self.send_velocity(p_y_coeff*displacement_y, 0, 0)
+                    #     #time.sleep(0.1)
+                    # elif displacement_y <= -2:
+                    #     print("displacement < 10 thus backward")
+                    #     self.send_velocity((p_y_coeff*displacement_y), 0, 0)
+                    #     #time.sleep(0.1)
+                    # else:
+                    #     print("stop velocity")
+                    #     self.send_velocity(0,0,0)
+                    #     flag_x = 1 
                     
-                    if displacement_x >= 5:
-                        print("displacement < 10 thus right")
-                        self.send_velocity(0, p_x_coeff*displacement_x, 0)
-                        time.sleep(0.3)
-                    elif displacement_x <= -5:
-                        print("displacement < 10 thus left")
-                        self.send_velocity(0, -(p_x_coeff*displacement_x), 0)
-                        time.sleep(0.3)                   
+                    # if displacement_x >= 2:
+                    #     print("displacement < 10 thus right")
+                    #     self.send_velocity(0, p_x_coeff*displacement_x, 0)
+                    #     #time.sleep(0.1)
+                    # elif displacement_x <= -2:
+                    #     print("displacement < 10 thus left")
+                    #     self.send_velocity(0, (p_x_coeff*displacement_x), 0)
+                    #     #time.sleep(0.1)                   
+                    # else:
+                    #     print("stop velocity")
+                    #     self.send_velocity(0,0,0)
+                    #     flag_y = 1 
+
+
+                    if displacement_x >= 2 or displacement_x <= -2:
+                        v_x = p_x_coeff*displacement_x
                     else:
-                        print("stop velocity")
-                        self.send_velocity(0,0,0)
-                        flag_y = 1 
+                        v_x = 0
+                        flag_x = 1
+
+                    if displacement_y >= 2 or displacement_y <= -2:
+                        v_y = p_x_coeff*displacement_y
+                    else:
+                        v_y = 0
+                        flag_y = 1
+
    
                     if flag_x == 1 and flag_y == 1:
                         print("mode land")
-                        self.vehicle.mode = VehicleMode("LAND")   
+                        self.vehicle.mode = VehicleMode("LAND")
+                    else:
+                        self.send_velocity(v_y, v_x, 0)
+
+                         
                     #rospy.loginfo("Displacement: {}".format(displacement))
                     # Draw center point
                     cv2.circle(cv_image, center_point, 5, (0, 255, 0), -1)
