@@ -60,5 +60,6 @@ cnt = 0
 while cnt < 10:
     send_velocity(vehicle, 10, 0, 0)
     time.sleep(1)
+    cnt += 1
 print("ho gaya")
 vehicle.mode = VehicleMode("RTL")
