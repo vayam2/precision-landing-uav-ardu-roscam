@@ -58,7 +58,7 @@ vehicle = connect('127.0.0.1:6969', wait_ready=True)
 arm_and_takeoff(vehicle, 10)
 cnt = 0
 while cnt < 10:
-    send_velocity(vehicle, 50, 0, 0)
-    time.sleep(5)
+    send_velocity(vehicle, 10, 0, 0)
+    time.sleep(1)
 print("ho gaya")
 vehicle.mode = VehicleMode("RTL")
