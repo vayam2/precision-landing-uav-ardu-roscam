@@ -83,7 +83,7 @@ class ArUcoDetector:
                         current_altitude = self.vehicle.location.global_relative_frame.alt
                         land_alti = 2
                         if current_altitude > land_alti:
-                            self.send_velocity(0, 0, 2)
+                            self.send_velocity(0, 0, 4)
                         else:
                             print("mode land")
                             self.vehicle.mode = VehicleMode("LAND")
