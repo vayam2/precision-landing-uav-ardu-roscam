@@ -23,6 +23,7 @@ class ArUcoDetector:
     def capture_video(self):
         cap = cv2.VideoCapture(0)  # 0 is the default camera index
         while cap.isOpened():
+            self.vehicle.gimbal.rotate(0, 0, 90)
             ret, frame = cap.read()
             if ret:
                 self.process_frame(frame)
