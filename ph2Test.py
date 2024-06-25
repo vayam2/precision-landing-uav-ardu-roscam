@@ -1,5 +1,5 @@
-# Imports
 #!/usr/bin/env python3
+# Imports
 
 import cv2
 import numpy as np
@@ -90,13 +90,6 @@ class ArUcoDetector:
                             self.vehicle.mode = VehicleMode("LAND")
                     else:
                         self.send_velocity(v_y, v_x, 0)
-
-   
-                    # if flag_x == 1 and flag_y == 1:
-                        # print("mode land")
-                        # self.vehicle.mode = VehicleMode("LAND")
-                    # else:
-                        # self.send_velocity(v_y, v_x, 0)
 
                     # Draw center point
                     #cv2.circle(frame, center_point, 5, (0, 255, 0), -1)
