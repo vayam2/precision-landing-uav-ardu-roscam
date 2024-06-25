@@ -23,7 +23,8 @@ class ArUcoDetector:
     def capture_video(self):
         cap = cv2.VideoCapture(0)  # 0 is the default camera index
         while cap.isOpened():
-            self.vehicle.gimbal.rotate(0, 0, 90)
+            self.vehicle.gimbal.rotate(0, 0, -90)
+            #self.vehicle.gimbal.rotate(0, 0, 90)
             ret, frame = cap.read()
             if ret:
                 self.process_frame(frame)
@@ -48,7 +49,7 @@ class ArUcoDetector:
                     marker_corners = corners[i][0]
 
                     # Draw marker
-                    cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+                    #cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
                     # Calculate center point
                     center_x = int(np.mean(marker_corners[:, 0]))
@@ -67,13 +68,13 @@ class ArUcoDetector:
                     p_x_coeff = 0.0025 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
                     p_y_coeff = 0.003 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
                     
-                    if displacement_x >= 5 or displacement_x <= -5:
+                    if displacement_x >= 3 or displacement_x <= -3:
                         v_x = p_x_coeff*displacement_x
                     else:
                         v_x = 0
                         flag_x = 1
 
-                    if displacement_y >= 5 or displacement_y <= -5:
+                    if displacement_y >= 3 or displacement_y <= -3:
                         v_y = p_y_coeff*displacement_y
                     else:
                         v_y = 0
@@ -81,7 +82,7 @@ class ArUcoDetector:
 
                     if flag_x == 1 and flag_y == 1:
                         current_altitude = self.vehicle.location.global_relative_frame.alt
-                        land_alti = 2
+                        land_alti = 1
                         if current_altitude > land_alti:
                             print("Alti when going down")
                             self.send_velocity(0, 0, 1)
