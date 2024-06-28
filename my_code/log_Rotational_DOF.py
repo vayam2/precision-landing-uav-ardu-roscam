@@ -53,7 +53,7 @@ def send_velocity(vx, vy, vz):
     vehicle.flush()
 
 vehicle = connect("127.0.0.1:14550", wait_ready=True)
-takeoff_altitude = 10
+takeoff_altitude = 25
 arm_and_takeoff(takeoff_altitude)
 
 i = 0
