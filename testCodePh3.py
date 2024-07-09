@@ -43,6 +43,7 @@ class PrecisionLand:
     def processFrame(self, frame):
         height, width, _ = frame.shape  # Get frame size
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        self.lidar_alti = self.vehicle.rangefinder.distance
         corners, ids, rejectedImgPoints = self.detector.detectMarkers(gray)
 
         if ids is not None:
@@ -90,7 +91,7 @@ class PrecisionLand:
 
                     v_z = p_z_coeff*self.lidar_alti
 
-                    if self.lidar_alti > 3:
+                    if self.lidar_alti > 2:
                         self.send_velocity(v_x, v_y, v_z)
                     elif flag_x == 1 and flag_y == 1: 
                         if self.lidar_alti <= self.land_alti:
@@ -112,11 +113,9 @@ class PrecisionLand:
             pass
 
     def calcDesiredPixelError(self):
-        if self.lidar_alti > 4:
+        if self.lidar_alti > 2:
             return 10
-        elif int(self.lidar_alti) > 2:
-            return int(self.lidar_alti)
-        return 2
+        return 3
 
     def arm_and_takeoff(self, aTargetAltitude):
         """
