@@ -15,14 +15,13 @@ class PrecisionLand:
         self.parameters = cv2.aruco.DetectorParameters()
         self.detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.parameters) # declare a detector with the selected params and dict
 
+        self.vehicle = connect('127.0.0.1:6969')  # Replace with your connection string
+        
         self.lidar_alti = self.vehicle.rangefinder.distance   # unit: metres
         self.land_alti = 1   # unit: metres
         self.takeoff_alti = 10  # unit: metres
-        self.flag = 1
-        
-        self.vehicle = connect('127.0.0.1:6969')  # Replace with your connection string
 
-        self.arm_and_takeoff(8) 
+        self.arm_and_takeoff(self.takeoff_alti) 
         self.send_velocity(2, 0, 0)
         print("sending initial velocity")
 
@@ -61,8 +60,8 @@ class PrecisionLand:
                     cv2.circle(frame, center_point, 5, (0, 255, 0), -1)    # Draw center point                 
                     cv2.putText(frame, str(marker_id), center_point, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)   # Display marker ID near the center point
                     
-                    center_frame_x = height / 2
-                    center_frame_y = width / 2
+                    center_frame_x = 320
+                    center_frame_y = 240
                     displacement_x = center_x - center_frame_x
                     displacement_y = center_frame_y - center_y
                     displacement = (displacement_x,displacement_y)
@@ -72,9 +71,9 @@ class PrecisionLand:
                     flag_y = 0
                     p_x_coeff = 0.0025
                     p_y_coeff = 0.003
+                    p_z_coeff = 0.075
 
                     self.lidar_alti = self.vehicle.rangefinder.distance
-
                     desired_pixel_error = self.calcDesiredPixelError()
 
                     if displacement_x >= desired_pixel_error or displacement_x <= -desired_pixel_error:
@@ -89,22 +88,27 @@ class PrecisionLand:
                         v_y = 0
                         flag_y = 1
 
+                    v_z = p_z_coeff*self.lidar_alti
+
                     if self.lidar_alti > 3:
-                        self.send_velocity(v_x, v_y, 1)
+                        self.send_velocity(v_x, v_y, v_z)
                     elif flag_x == 1 and flag_y == 1: 
                         if self.lidar_alti <= self.land_alti:
                             print("Mode Land")
                             self.vehicle.mode = VehicleMode("LAND")
                         else:
                             print("Alti when going down")
-                            self.send_velocity(0, 0, 1)
+                            self.send_velocity(0, 0, v_z)
                     else:
                         self.send_velocity(v_x, v_y, 0)
         
         else:
-            if self.lidar_alti >= 8 and self.flag == 1:
+            if self.lidar_alti >= 8:
                 self.send_velocity(2, 0, 0)
                 print("Velocity when aruco not detected")
+            else:
+                print("Phass gaye re baba")
+                self.vehicle.mode = VehicleMode("RTL")
             pass
 
     def calcDesiredPixelError(self):
