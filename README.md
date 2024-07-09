@@ -55,7 +55,7 @@ In a second terminal run these lines
 
     cd ~/ardupilot/ArduCopter 
  
-    sim_vehicle.py -f gazebo-iris --console --map 
+    sim_vehicle.py -f gazebo-iris --console --map --out 127.0.0.1:6969
 
  
 
@@ -65,4 +65,4 @@ In third Terminal run these lines
 
     source ~/ardupilot_gazebo_roscam/devel/setup.bash 
 
-    Rosrun ardupilot_gazebo sitl.py 
+    Rosrun ardupilot_gazebo testCodePh3ROS.py 
