@@ -14,32 +14,39 @@ class ArUcoDetector:
         self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_100)
         self.parameters = cv2.aruco.DetectorParameters()
         self.detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.parameters) # declare a detector with the selected params and dict
-        self.vehicle = connect('127.0.0.1:14550', wait_ready=True)  # Replace with your connection string
-        self.arm_and_takeoff(10) 
-        self.send_velocity(1, 0, 0)
-        print("sending initial velocity")
-        self.flag = 1  # Replace 10 with your desired altitude
+        self.vehicle = connect('127.0.0.1:6969', wait_ready=True)  # Replace with your connection string
+        self.takeoff_alti = 8  # unit: metres
+        self.arm_and_takeoff(self.takeoff_alti) 
+        self.lidar_alti = self.vehicle.rangefinder.distance
+        if self.lidar_alti <=0.1 or self.lidar_alti >= 5 or self.lidar_alti is None:
+            self.lidar_alti = self.vehicle.location.global_relative_frame.alt
+        self.land_alti = 1   # unit: metres
 
+        self.send_velocity(2, 0, 0)
+        print("sending initial velocity")
+        self.capture_video()
     def capture_video(self):
-        cap = cv2.VideoCapture(0)  # 0 is the default camera index
+        cap = cv2.VideoCapture(0)# 0 is the default camera index
+        print("video aa gyi")
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
                 self.process_frame(frame)
-                cv2.imshow("ArUco Detection", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                #cv2.imshow("ArUco Detection", frame)
+                #if cv2.waitKey(1) & 0xFF == ord('q'):
+                #break
         cap.release()
-        cv2.destroyAllWindows()
+        #cv2.destroyAllWindows()
 
     def process_frame(self, frame):
+        print("in processFrame")
         height, width, _ = frame.shape  # Get frame size
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, rejectedImgPoints = self.detector.detectMarkers(gray)
-        
-        if ids is None:
-            self.flag = 1
-
+        self.lidar_alti = self.vehicle.rangefinder.distance
+        if self.lidar_alti <=0.1 or self.lidar_alti >= 5 or self.lidar_alti is None:
+            self.lidar_alti = self.vehicle.location.global_relative_frame.alt
+        print("lidar = ", self.lidar_alti)
         if ids is not None:
             # Draw detected markers and calculate center points
             for i in range(len(ids)):
@@ -48,7 +55,7 @@ class ArUcoDetector:
                     marker_corners = corners[i][0]
 
                     # Draw marker
-                    cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+                    #cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
                     # Calculate center point
                     center_x = int(np.mean(marker_corners[:, 0]))
@@ -66,26 +73,43 @@ class ArUcoDetector:
                     flag_y = 0
                     p_x_coeff = 0.0025 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
                     p_y_coeff = 0.003 #+ (self.vehicle.location.global_relative_frame.alt*0.0001)
+                    p_z_coeff = 0.075
+                    self.lidar_alti = self.vehicle.rangefinder.distance
+                    if self.lidar_alti <=0.1 or self.lidar_alti >= 5 or self.lidar_alti is None:
+                        self.lidar_alti = self.vehicle.location.global_relative_frame.alt
                     
-                    if displacement_x >= 2 or displacement_x <= -2:
+                    desired_pixel_error = self.calcDesiredPixelError()
+
+
+                    if displacement_x >= desired_pixel_error or displacement_x <= -desired_pixel_error:
                         v_x = p_x_coeff*displacement_x
                     else:
                         v_x = 0
                         flag_x = 1
 
-                    if displacement_y >= 2 or displacement_y <= -2:
-                        v_y = p_x_coeff*displacement_y
+                    if displacement_y >= desired_pixel_error or displacement_y <= -desired_pixel_error:
+                        v_y = p_y_coeff*displacement_y
                     else:
                         v_y = 0
                         flag_y = 1
 
-   
-                    if flag_x == 1 and flag_y == 1:
-                        print("mode land")
-                        self.vehicle.mode = VehicleMode("LAND")
+                    v_z = p_z_coeff*self.lidar_alti
+
+                    if self.lidar_alti > 3:
+                        self.send_velocity(v_y, v_x, v_z)
+
+                    elif flag_x == 1 and flag_y == 1:
+                        if self.lidar_alti <= self.land_alti:
+                            print("mode land")
+                            self.vehicle.mode = VehicleMode("LAND")
+                        else:
+                            print("down")
+                            self.send_velocity(0, 0, v_z)
+
                     else:
                         self.send_velocity(v_y, v_x, 0)
 
+        
                     # Draw center point
                     cv2.circle(frame, center_point, 5, (0, 255, 0), -1)
 
@@ -93,13 +117,22 @@ class ArUcoDetector:
                     cv2.putText(frame, str(marker_id), center_point, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
         else:
-            if self.vehicle.location.global_relative_frame.alt >= 9 and self.flag == 1:
-                self.send_velocity(1, 0, 0)
+            if self.lidar_alti >= self.land_alti:
+                self.send_velocity(2, 0, 0)
                 print("Velocity when aruco not detected")
-            pass
+            else:
+                print("stuck!")
+                self.vehicle.mode = VehicleMode("RTL")
+            
+        #cv2.imshow("ArUco Detection", frame)
+        #cv2.waitKey(1)
 
-        cv2.imshow("ArUco Detection", frame)
-        cv2.waitKey(1)
+    def calcDesiredPixelError(self):
+        if self.lidar_alti > 7:
+            return 10
+        # elif self.lidar_alti > 2:
+        #     return int(self.lidar_alti)
+        return 3
 
     def arm_and_takeoff(self, aTargetAltitude):
         """
@@ -156,7 +189,6 @@ class ArUcoDetector:
 if __name__ == '__main__':
     try:
         detector = ArUcoDetector()
-        detector.capture_video()
     except KeyboardInterrupt:
         pass
 
